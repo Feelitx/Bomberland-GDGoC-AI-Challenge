@@ -14,6 +14,8 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 from engine import *
 from agent import SimpleRuleAgent, SmarterRuleAgent, TacticalRuleAgent, GeniusRuleAgent, BoxFarmerAgent
