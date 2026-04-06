@@ -35,6 +35,7 @@ try:
         encode_obs,
     )
     from .reward_02 import EpisodeRewardState, compute_reward_icec
+    from .utils import plot_loss, plot_moving_average, plot_rewards
 except ImportError:
     from bomber_shared import (
         AGENT_LOOKUP,
@@ -44,6 +45,7 @@ except ImportError:
         encode_obs,
     )
     from reward_02 import EpisodeRewardState, compute_reward_icec
+    from utils import plot_loss, plot_moving_average, plot_rewards
 
 BC_CLASS_WEIGHTS = torch.tensor([0.3, 1.0, 1.0, 1.0, 1.0, 2.0], dtype=torch.float32)
 
@@ -393,12 +395,13 @@ def train_bc_ppo_lstm(
     tag = f"bcppo_{expert_type}_{enemy_type}_p{parallel_envs}_s{seed}"
     out_dir = f"ckpts/{tag}"
 
+    bc_loss_history: list[float] = []
     if load_checkpoint_path:
         load_checkpoint(load_checkpoint_path, model, device, optimizer)
         model.train()
     elif not skip_bc:
         print("Phase 1: Behavioral cloning (LSTM policy, i.i.d. windows)")
-        pretrain_bc_lstm(model, bc_data, device, bc_epochs=bc_epochs)
+        bc_loss_history = pretrain_bc_lstm(model, bc_data, device, bc_epochs=bc_epochs)
         if save_model:
             save_checkpoint(
                 f"{out_dir}/after_bc.pth", model, None,
@@ -437,6 +440,10 @@ def train_bc_ppo_lstm(
         f"steps/rollout={ppo_steps}  recurrent_minibatch_envs={_epm} "
         f"(~{_epm * ppo_steps} transitions per opt step)"
     )
+
+    ppo_loss_history: list[float] = []
+    reward_history: list[float] = []
+    rollout_return_history: list[float] = []
 
     pbar = tqdm(range(ppo_updates), desc="PPO+LSTM")
     for upd in pbar:
@@ -486,6 +493,9 @@ def train_bc_ppo_lstm(
                     obs_l[n] = next_obs
                     map_l[n], aux_l[n] = encode_obs(next_obs, agent_ids)
                     prev_l[n] = next_obs
+
+        reward_history.extend(stor_rew.reshape(-1).tolist())
+        rollout_return_history.append(float(np.mean(stor_rew.sum(axis=0))))
 
         # Bootstrap value V(s_last) for GAE at T-1
         with torch.no_grad():
@@ -567,7 +577,18 @@ def train_bc_ppo_lstm(
             v_loss = torch.tensor(v_acc / max(n_mb, 1), device=device)
             ent_scalar = torch.tensor(ent_acc / max(n_mb, 1), device=device)
 
+        total_obj = pi_loss + vf_coef * v_loss - ent_coef * ent_scalar
+        ppo_loss_history.append(float(total_obj.item()))
         pbar.set_postfix(pi=f"{pi_loss.item():.3f}", v=f"{v_loss.item():.3f}", ent=f"{ent_scalar.item():.3f}")
+
+    os.makedirs(out_dir, exist_ok=True)
+    if bc_loss_history:
+        plot_loss(bc_loss_history, save_path=f"{out_dir}/{tag}_bc_loss.png")
+    plot_loss(ppo_loss_history, save_path=f"{out_dir}/{tag}_ppo_loss.png")
+    plot_rewards(reward_history, save_path=f"{out_dir}/{tag}_rewards.png")
+    plot_moving_average(
+        rollout_return_history, window_size=10, save_path=f"{out_dir}/{tag}_moving_avg.png"
+    )
 
     if save_model:
         save_checkpoint(
