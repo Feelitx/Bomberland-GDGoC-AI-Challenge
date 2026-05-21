@@ -74,11 +74,11 @@ def process_registration_payload(payload: Mapping[str, Any], store: SubmissionSt
     second_contact_email = _get_payload_value(
         normalized, "second_contact_email", "second contact email"
     )
-    university_student_1 = _get_payload_value(
-        normalized, "university_student_1", "university student 1"
+    primary_university = _get_payload_value(
+        normalized, "primary_university", "primary university"
     )
-    university_student_2 = _get_payload_value(
-        normalized, "university_student_2", "university student 2"
+    secondary_university = _get_payload_value(
+        normalized, "secondary_university", "secondary university"
     )
     student_id_1 = _get_payload_value(
         normalized, "student_id_1", "student id 1"
@@ -110,11 +110,11 @@ def process_registration_payload(payload: Mapping[str, Any], store: SubmissionSt
             "error_code": "MISSING_PRIMARY_CONTACT_EMAIL",
             "message": "Primary contact email is required.",
         }
-    if not university_student_1:
+    if not primary_university:
         return {
             "status": "error",
-            "error_code": "MISSING_UNIVERSITY_STUDENT_1",
-            "message": "University for Student 1 is required.",
+            "error_code": "MISSING_PRIMARY_UNIVERSITY",
+            "message": "Primary university is required.",
         }
     if not student_id_1:
         return {
@@ -175,8 +175,8 @@ def process_registration_payload(payload: Mapping[str, Any], store: SubmissionSt
         "primary_contact_email": primary_contact_email,
         "second_contact_name": second_contact_name,
         "second_contact_email": second_contact_email,
-        "university_student_1": university_student_1,
-        "university_student_2": university_student_2,
+        "primary_university": primary_university,
+        "secondary_university": secondary_university,
         "student_id_1": student_id_1,
         "student_id_2": student_id_2,
         "majors": majors,
