@@ -395,7 +395,7 @@ One **best baseline agent** will also participate as a benchmark.
 ### Grand Finals Tie-break
 
 If total points are tied:
-1. Frozen Leaderboard Score (`μ − 3σ`)
+1. Leaderboard Score after 12 hours of the final phase (`μ − 3σ`)
 2. Higher `μ`
 3. Lower `σ`
 
