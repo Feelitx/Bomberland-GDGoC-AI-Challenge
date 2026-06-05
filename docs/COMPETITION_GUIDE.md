@@ -66,11 +66,13 @@ Each step, the agent returns **1 integer**:
 | Value | Action |
 |---|---|
 | `0` | STOP (stay still) |
-| `1` | LEFT |
-| `2` | RIGHT |
-| `3` | UP |
-| `4` | DOWN |
+| `1` | LEFT -> UP |
+| `2` | RIGHT -> DOWN |
+| `3` | UP -> LEFT |
+| `4` | DOWN -> RIGHT |
 | `5` | PLACE_BOMB |
+
+**Note** (June 5, 2026): Found a coordinate bug in `engine/game.py`. Currently, the engine defines `x` as the row and `y` as the column, but the movement code accidentally swapped them. Because the competition has already started, we will keep the engine code exactly as it is so we don't break your existing agents. The updated table above shows what the actions actually do.
 
 **Movement Rules:**
 - Cannot move through walls (`1`) or boxes (`2`).
